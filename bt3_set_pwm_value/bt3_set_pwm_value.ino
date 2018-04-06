@@ -1,10 +1,10 @@
 /*
-	Exemplo de controle de um modulo digital por Bluetooth
+	Exemplo de controle de um modulo PWM por Bluetooth
 
 	O circuito:
 	* RX eh o pino digital 2 (conectar ao TX do outro dispositivo)
 	* TX eh o pino digital 3 (conectar ao RX do outro dispositivo)
-	* O sensor eh o pino digital 9
+	* O sensor eh o pino PWM 9
 
 	Nota:
 	Nem todos pinos da Arduino Mega nem Mega 2560 suportam interrupcoes,
@@ -27,7 +27,7 @@
 // Modulo Bluetooth
 SoftwareSerial bluetoothSerial(2, 3); // RX, TX
 
-// Pino do modulo digital
+// Pino do modulo PWM
 int module_pin = 9;
 
 
@@ -40,6 +40,7 @@ void setup()
 	// Abre a comunicacao software serial (bluetooth)
 	bluetoothSerial.begin(9600);
 	bluetoothSerial.println("Hello, world?");
+	bluetoothSerial.setTimeout(50);
 
 	// Define o modulo digital como OUTPUT
 	pinMode(module_pin, OUTPUT);
@@ -61,34 +62,12 @@ void loop()
 	if (bluetoothSerial.available())
 	{
 		// Leitura do Bluetooth
-		char command = (char)bluetoothSerial.read();
-		// Filtra a quebra de linha
-		if (command != '\n' && command != '\r')
-		{
-			switch (command)
-			{
-				// Caso seja o comando de ligar, ativa o modulo
-				case ON_COMMAND:
-					digitalWrite(module_pin, HIGH);
-					Serial.println("ON");
-					bluetoothSerial.println("ON");
-					break;
-				// Caso seja o comando de desligar, desativa o modulo
-				case OFF_COMMAND:
-					digitalWrite(module_pin, LOW);
-					Serial.println("OFF");
-					bluetoothSerial.println("OFF");
-					break;
-				// Caso seja o comando seja invalido, nao modifica o modulo
-				default:
-					Serial.print("Error. Received '");
-					Serial.print(command);
-					Serial.println("'");
-					bluetoothSerial.print("Error. Received '");
-					bluetoothSerial.print(command);
-					bluetoothSerial.println("'");
-			}
-		}
+		int bt_value = bluetoothSerial.parseInt();
+		// Mapeamento para passar da escala de 0-100 para 0-255, padrao de PWM na Arduino
+		bt_value = map(bt_value, 0, 100, 0, 255);
+		// Define a intensidade do PWM
+		analogWrite(module_pin, bt_value);
+		// Serial.println(bt_value, DEC);
 	}
 }
 
